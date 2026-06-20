@@ -1,0 +1,36 @@
+spring:
+  sql:
+    init:
+      continue-on-error: true
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    show-sql: true
+  application:
+    name: accessories
+
+server:
+  port: 8585
+
+telegram:
+  bot:
+    token: ${BOT_TOKEN}
+
+app:
+  admin:
+    mobile: ${ADMIN_MOBILES}
+    password: ${ADMIN_PASSWORD}
+    chat-id: ${ADMIN_CHAT_IDS}
+  upload:
+    dir: ${UPLOAD_DIR}
+
+supabase:
+  url: ${SUP_BASE_URL}
+  key: ${SUP_BASE_KEY}

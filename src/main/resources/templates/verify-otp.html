@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>تایید کد ورود</title>
+    <link rel="icon" type="image/png" th:href="@{/icon.png}">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" th:href="@{/css/global.css}">
+    <link rel="stylesheet" th:href="@{/css/auth.css}">
+</head>
+<body>
+<div class="auth-page">
+    <div class="auth-card">
+        <div class="brand-badge">OTP Verify</div>
+        <h1>تایید کد ورود</h1>
+        <p class="subtitle">
+            کد ارسال‌شده برای شماره
+            <span class="mobile-highlight" th:text="${mobile}">09121234567</span>
+            را وارد کنید.
+        </p>
+
+        <div th:if="${message}" class="alert success">کد با موفقیت در بله ارسال شد.</div>
+        <div th:if="${error}" class="alert error" th:text="${error}"></div>
+
+        <form th:action="@{/otp/verify}" method="post" class="auth-form">
+            <input type="hidden" name="mobile" th:value="${mobile}">
+
+            <label for="code">کد تایید</label>
+            <input id="code"
+                   name="code"
+                   type="text"
+                   inputmode="numeric"
+                   placeholder="کد 6 رقمی"
+                   required
+                   autocomplete="one-time-code">
+
+            <button type="submit" class="primary-btn">ورود به پنل</button>
+        </form>
+
+        <form th:action="@{/otp/send}" method="post" class="secondary-form">
+            <input type="hidden" name="mobile" th:value="${mobile}">
+            <button type="submit" class="secondary-btn">ارسال مجدد کد</button>
+        </form>
+
+        <a th:href="@{/login}" class="back-link">بازگشت به صفحه ورود</a>
+    </div>
+</div>
+</body>
+</html>

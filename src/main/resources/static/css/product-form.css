@@ -1,0 +1,130 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Vazirmatn, sans-serif;
+    background: linear-gradient(135deg, #0f172a, #111827);
+    color: #f8fafc;
+    min-height: 100vh;
+}
+
+.form-page {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 24px;
+}
+
+.form-card {
+    width: 100%;
+    max-width: 700px;
+    background: rgba(17, 24, 39, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 20px;
+    padding: 28px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+}
+
+.form-card h1 {
+    margin-top: 0;
+    margin-bottom: 24px;
+    font-size: 28px;
+    text-align: center;
+    color: #ffffff;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 18px;
+}
+
+.form-group label {
+    font-size: 15px;
+    color: #cbd5e1;
+}
+
+.form-group input,
+.form-group textarea {
+    width: 100%;
+    border: 1px solid #334155;
+    background: #0f172a;
+    color: #f8fafc;
+    border-radius: 12px;
+    padding: 14px 16px;
+    font-size: 15px;
+    outline: none;
+    transition: 0.2s ease;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+    border-color: #38bdf8;
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 120px;
+}
+
+.form-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+    flex-wrap: wrap;
+}
+
+.submit-btn,
+.cancel-btn {
+    border: none;
+    border-radius: 12px;
+    padding: 14px 20px;
+    font-size: 15px;
+    cursor: pointer;
+    text-decoration: none;
+    text-align: center;
+    transition: 0.2s ease;
+}
+
+.submit-btn {
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: #fff;
+    flex: 1;
+}
+
+.submit-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 24px rgba(34, 197, 94, 0.3);
+}
+
+.cancel-btn {
+    background: #1e293b;
+    color: #e2e8f0;
+    flex: 1;
+}
+
+.cancel-btn:hover {
+    background: #334155;
+}
+
+@media (max-width: 640px) {
+    .form-card {
+        padding: 20px;
+        border-radius: 16px;
+    }
+
+    .form-card h1 {
+        font-size: 22px;
+    }
+
+    .submit-btn,
+    .cancel-btn {
+        width: 100%;
+        flex: unset;
+    }
+}

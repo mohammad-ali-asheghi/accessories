@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${product.name}">جزئیات محصول</title>
+    <link rel="icon" type="image/png" th:href="@{/icon.png}">
+    <link rel="stylesheet" th:href="@{/css/global.css}">
+    <link rel="stylesheet" th:href="@{/css/product-details.css}">
+</head>
+<body>
+<div class="container">
+    <div class="product-card">
+        <!-- عکس محصول اگه داشت -->
+        <img th:if="${product.imageUrl != null}" th:src="${product.imageUrl}" alt="عکس محصول" class="product-img">
+
+        <h1 class="product-title" th:text="${product.name}">نام محصول</h1>
+
+        <div class="price-tag">
+            <span>قیمت: </span>
+            <span th:text="${product.price}"></span>
+            <span> تومان</span>
+        </div>
+
+        <div class="description-box">
+            <h3>توضیحات:</h3>
+            <p th:text="${product.description}">توضیحات محصول اینجا قرار می‌گیرد.</p>
+        </div>
+
+        <!-- این دکمه‌ها فقط برای ادمینِ عزیز که بالاخره به حقش رسید نمایش داده میشه 😎 -->
+        <div th:if="${isAdmin}" class="admin-actions">
+            <a th:href="@{/products/{id}/edit(id=${product.id})}" class="btn edit-btn">✏️ ویرایش محصول</a>
+            <a th:href="@{/}" class="btn back-btn">🏠 برگشت به خانه</a>
+        </div>
+        <div th:unless="${isAdmin}" class="user-actions">
+            <a th:href="@{/}" class="btn back-btn">🏠 برگشت به فروشگاه</a>
+        </div>
+    </div>
+</div>
+</body>
+</html>

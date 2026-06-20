@@ -1,0 +1,110 @@
+body {
+    margin: 0;
+    font-family: Vazirmatn, sans-serif;
+    background: radial-gradient(circle at top right, rgba(59, 130, 246, 0.16), transparent 24%),
+    radial-gradient(circle at top left, rgba(16, 185, 129, 0.12), transparent 22%),
+    linear-gradient(180deg, #0b1120 0%, #111827 100%);
+    color: #f8fafc;
+    min-height: 100vh;
+    padding: 24px;
+}
+
+.container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 80vh;
+    padding: 20px;
+}
+
+.product-card {
+    /* همگام‌سازی با کارت‌های index.css */
+    background: rgba(15, 23, 42, 0.96);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 20px;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.22);
+    padding: 30px;
+    max-width: 600px;
+    width: 100%;
+    text-align: center;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    color: #f8fafc;
+}
+
+.product-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 38px rgba(0, 0, 0, 0.3);
+    border-color: rgba(56, 189, 248, 0.28);
+}
+
+.product-img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+}
+
+.product-title {
+    color: #ffffff;
+    font-size: 28px;
+    font-weight: 800;
+    margin-bottom: 15px;
+}
+
+.price-tag {
+    font-size: 22px;
+    color: #4ade80; /* سبز روشن و مدرن */
+    font-weight: bold;
+    margin: 15px 0;
+    background: rgba(74, 222, 128, 0.1); /* پس‌زمینه محو شیشه‌ای */
+    display: inline-block;
+    padding: 10px 20px;
+    border-radius: 20px;
+    border: 1px solid rgba(74, 222, 128, 0.2);
+}
+
+.description-box {
+    text-align: right;
+    background: rgba(255, 255, 255, 0.03); /* هماهنگ با تم تاریک */
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 15px;
+    border-radius: 12px;
+    margin: 20px 0;
+    line-height: 1.8;
+    color: #cbd5e1;
+}
+
+.btn {
+    display: inline-block;
+    padding: 12px 24px;
+    border-radius: 12px;
+    text-decoration: none;
+    font-weight: 700;
+    margin: 8px 5px;
+    transition: all 0.25s ease;
+    border: none;
+    cursor: pointer;
+}
+
+.edit-btn {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: white;
+    box-shadow: 0 12px 24px rgba(245, 158, 11, 0.22);
+}
+
+.edit-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 18px 28px rgba(245, 158, 11, 0.28);
+}
+
+.back-btn {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: white;
+    box-shadow: 0 12px 24px rgba(59, 130, 246, 0.22);
+}
+
+.back-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 18px 28px rgba(59, 130, 246, 0.28);
+}

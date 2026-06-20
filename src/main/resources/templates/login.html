@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>ورود ادمین</title>
+    <link rel="icon" type="image/png" th:href="@{/icon.png}">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" th:href="@{/css/global.css}">
+    <link rel="stylesheet" th:href="@{/css/auth.css}">
+</head>
+<body>
+<div class="auth-page">
+    <div class="auth-card">
+        <div class="brand-badge">Admin Panel</div>
+        <h1>ورود به پنل مدیریت</h1>
+        <p class="subtitle">شماره موبایل ثبت‌شده را وارد کنید تا کد ورود برای شما ارسال شود.</p>
+
+        <form th:action="@{/otp/send}" method="post" class="auth-form">
+            <label for="mobile">شماره موبایل</label>
+            <input id="mobile"
+                   name="mobile"
+                   type="text"
+                   inputmode="numeric"
+                   placeholder="مثلاً 09121234567"
+                   required
+                   autocomplete="tel">
+
+            <button type="submit" class="primary-btn">ارسال کد ورود</button>
+        </form>
+    </div>
+</div>
+</body>
+</html>
