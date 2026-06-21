@@ -183,11 +183,16 @@ public class ProductController {
             String deleteUrl = url + "/storage/v1/object/" + bucketName + "/" + fileName;
 
             HttpHeaders headers = new HttpHeaders();
-            headers.set("Authorization", "Bearer " + key);
+            headers.setBearerAuth(key);
             headers.set("apikey", key);
 
             HttpEntity<String> entity = new HttpEntity<>(headers);
-            ResponseEntity<String> response = restTemplate.exchange(deleteUrl, HttpMethod.DELETE, entity, String.class);
+            ResponseEntity<String> response = restTemplate.exchange(
+                    deleteUrl,
+                    HttpMethod.DELETE,
+                    entity,
+                    String.class
+            );
 
             System.out.println("Delete Success." + response.getStatusCode());
         } catch (Exception e) {
