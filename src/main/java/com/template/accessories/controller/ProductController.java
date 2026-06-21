@@ -140,6 +140,7 @@ public class ProductController {
 
             HttpHeaders headers = new HttpHeaders();
             headers.setBearerAuth(key);
+            headers.set("apikey", key);
             headers.setContentType(MediaType.parseMediaType(Objects.requireNonNull(imageFile.getContentType())));
 
             HttpEntity<byte[]> requestEntity = new HttpEntity<>(imageFile.getBytes(), headers);
