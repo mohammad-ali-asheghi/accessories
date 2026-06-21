@@ -169,7 +169,33 @@ public class ProductController {
     @PreAuthorize("hasRole(T(com.template.accessories.enums.RoleEnum).ADMIN)")
     @ResponseBody
     public ResponseEntity<?> deleteProduct(@PathVariable Long id) {
+        ProductEntity product = productService.getProduct(id);
+        deleteFileFromStorage(product.getImageUrl());
         productService.deleteProduct(id);
         return ResponseEntity.ok().build();
+    }
+
+    private void deleteFileFromStorage(String fileUrlOrName) {
+        try {
+            String fileName = extractFileName(fileUrlOrName);
+            String bucketName = "images";
+
+            String deleteUrl = url + "/storage/v1/object/" + bucketName + "/" + fileName;
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("Authorization", "Bearer " + key);
+            headers.set("apikey", key);
+
+            HttpEntity<String> entity = new HttpEntity<>(headers);
+            ResponseEntity<String> response = restTemplate.exchange(deleteUrl, HttpMethod.DELETE, entity, String.class);
+
+            System.out.println("Delete Success." + response.getStatusCode());
+        } catch (Exception e) {
+            System.err.println("Wrong When Delete File." + e.getMessage());
+        }
+    }
+
+    private String extractFileName(String url) {
+        return url.substring(url.lastIndexOf("/") + 1);
     }
 }
