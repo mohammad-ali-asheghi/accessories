@@ -2,30 +2,44 @@ package com.template.accessories.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;
-import lombok.NonNull;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "product")
 @Getter
 @Setter
+@NoArgsConstructor
 public class ProductEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NonNull
     @Column(name = "name", nullable = false)
     private String name;
 
-    @Column(name = "description")
+    @Column(name = "description", length = 3000)
     private String description;
 
     @Column(name = "price")
     private Double price;
 
-    @NonNull
-    @Column(name = "image_url", nullable = false)
+    @Column(name = "image_url")
     private String imageUrl;
+
+    @Column(name = "category")
+    private String category;
+
+    @Column(name = "in_stock")
+    private Boolean inStock = true;
+
+    @Column(name = "created_at")
+    private LocalDateTime createdAt = LocalDateTime.now();
+
+    public boolean isInStock() {
+        return inStock == null || inStock;
+    }
 }

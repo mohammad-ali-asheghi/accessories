@@ -2,48 +2,96 @@
 <html lang="fa" dir="rtl" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>تایید کد ورود</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0b1120">
+    <title>تایید کد ورود | فروشگاه اکسسوری</title>
     <link rel="icon" type="image/png" th:href="@{/icon.png}">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" th:href="@{/css/global.css}">
     <link rel="stylesheet" th:href="@{/css/auth.css}">
 </head>
 <body>
+
 <div class="auth-page">
-    <div class="auth-card">
-        <div class="brand-badge">OTP Verify</div>
-        <h1>تایید کد ورود</h1>
-        <p class="subtitle">
-            کد ارسال‌شده برای شماره
-            <span class="mobile-highlight" th:text="${mobile}">09121234567</span>
-            را وارد کنید.
-        </p>
+    <div class="auth-card glass-card">
+        <div class="auth-header">
+            <span class="badge badge-sky">OTP Verification</span>
+            <h1 class="auth-title">تایید کد ورود</h1>
+            <p class="auth-subtitle">
+                کد ارسال‌شده برای شماره
+                <strong class="mobile-highlight" dir="ltr" th:text="${mobile}">09121234567</strong>
+                را وارد فرمایید.
+            </p>
+        </div>
 
-        <div th:if="${message}" class="alert success">کد با موفقیت در بله ارسال شد.</div>
-        <div th:if="${error}" class="alert error" th:text="${error}"></div>
+        <div th:if="${message}" class="auth-alert success" th:text="${message}"></div>
+        <div th:if="${error}" class="auth-alert error" th:text="${error}"></div>
 
-        <form th:action="@{/otp/verify}" method="post" class="auth-form">
+        <!-- Verification Form -->
+        <form th:action="@{/otp/verify}" method="post" class="auth-form-content">
             <input type="hidden" name="mobile" th:value="${mobile}">
 
-            <label for="code">کد تایید</label>
-            <input id="code"
-                   name="code"
-                   type="text"
-                   inputmode="numeric"
-                   placeholder="کد 6 رقمی"
-                   required
-                   autocomplete="one-time-code">
+            <div class="form-group">
+                <label for="code">کد تایید ۶ رقمی</label>
+                <input id="code"
+                       name="code"
+                       type="text"
+                       inputmode="numeric"
+                       pattern="[0-9]*"
+                       maxlength="6"
+                       placeholder="••••••"
+                       class="otp-digit-input"
+                       required
+                       autofocus
+                       autocomplete="one-time-code"
+                       dir="ltr">
+            </div>
 
-            <button type="submit" class="primary-btn">ورود به پنل</button>
+            <button type="submit" class="btn btn-primary submit-auth-btn">
+                <span>تایید و ورود به پنل</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+            </button>
         </form>
 
-        <form th:action="@{/otp/send}" method="post" class="secondary-form">
+        <!-- Resend OTP Form with Countdown -->
+        <form th:action="@{/otp/send}" method="post" id="resend-form" class="resend-container">
             <input type="hidden" name="mobile" th:value="${mobile}">
-            <button type="submit" class="secondary-btn">ارسال مجدد کد</button>
+            <button type="submit" id="resend-btn" class="resend-btn" disabled>
+                ارسال مجدد کد (<span id="countdown-timer">60</span> ثانیه)
+            </button>
         </form>
 
-        <a th:href="@{/login}" class="back-link">بازگشت به صفحه ورود</a>
+        <div class="auth-footer">
+            <a th:href="@{/login}" class="back-home-link">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="19" y1="12" x2="5" y2="12"></line>
+                    <polyline points="12 19 19 12 12 5"></polyline>
+                </svg>
+                <span>تغییر شماره موبایل یا ورود با رمز عبور</span>
+            </a>
+        </div>
     </div>
 </div>
+
+<script>
+let secondsRemaining = 60;
+const timerElem = document.getElementById('countdown-timer');
+const resendBtn = document.getElementById('resend-btn');
+
+const interval = setInterval(() => {
+    secondsRemaining--;
+    if (timerElem) timerElem.textContent = secondsRemaining;
+
+    if (secondsRemaining <= 0) {
+        clearInterval(interval);
+        if (resendBtn) {
+            resendBtn.disabled = false;
+            resendBtn.textContent = 'ارسال مجدد کد تایید';
+            resendBtn.classList.add('enabled');
+        }
+    }
+}, 1000);
+</script>
 </body>
 </html>

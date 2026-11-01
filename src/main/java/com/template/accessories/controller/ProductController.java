@@ -1,206 +1,179 @@
 package com.template.accessories.controller;
 
 import com.template.accessories.entity.ProductEntity;
-import com.template.accessories.enums.RoleEnum;
+import com.template.accessories.service.FileStorageService;
 import com.template.accessories.service.ProductService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
-import org.springframework.http.*;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.util.Objects;
-import java.util.UUID;
+import java.util.List;
 
+@Slf4j
 @Controller
 @RequiredArgsConstructor
 public class ProductController {
 
-    @Value("${supabase.url}")
-    private String url;
-
-    @Value("${supabase.key}")
-    private String key;
-
     private final ProductService productService;
-    private final RestTemplate restTemplate;
+    private final FileStorageService fileStorageService;
 
-    @GetMapping("/products/create")
-    @PreAuthorize("hasRole(T(com.template.accessories.enums.RoleEnum).ADMIN)")
-    public String createProductPage(Model model) {
-        model.addAttribute("product", new ProductEntity());
-        model.addAttribute("isEdit", false);
-        return "product-form";
-    }
-
-    @PostMapping("/products/create")
-    @PreAuthorize("hasRole(T(com.template.accessories.enums.RoleEnum).ADMIN)")
-    public String createProduct(@ModelAttribute ProductEntity product,
-                                @RequestParam("imageFile") MultipartFile imageFile,
-                                RedirectAttributes redirectAttributes) {
-        product.setImageUrl(createFile(imageFile, redirectAttributes));
-        productService.createOrUpdateProduct(product);
-        redirectAttributes.addFlashAttribute("message", "create product success.");
-        return "redirect:/";
+    @GetMapping("/")
+    public String index(Model model) {
+        model.addAttribute("categories", productService.getAllCategories());
+        return "index";
     }
 
     @GetMapping("/api/products")
     @ResponseBody
-    public Page<ProductEntity> getProducts(@RequestParam(defaultValue = "0") int page) {
-        return productService.getProductList(page);
+    public Page<ProductEntity> getProducts(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "12") int size,
+            @RequestParam(required = false) String category) {
+        return productService.getProductList(page, size, category);
     }
 
     @GetMapping("/api/products/search")
     @ResponseBody
     public Page<ProductEntity> searchProducts(
-            @RequestParam String q,
-            @RequestParam(defaultValue = "0") int page) {
-        return productService.searchProducts(q, page);
+            @RequestParam(required = false, defaultValue = "") String q,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "12") int size,
+            @RequestParam(required = false) String category) {
+        return productService.searchProducts(q, page, size, category);
     }
 
-    @GetMapping("/")
-    public String index(Model model, Authentication authentication) {
-        boolean isAdmin = false;
-        if (authentication != null && authentication.isAuthenticated()) {
-            isAdmin = authentication.getAuthorities().stream()
-                    .anyMatch(a ->
-                            Objects.equals(a.getAuthority(), RoleEnum.ADMIN.getAuthority())
-                    );
-        }
-        model.addAttribute("isAdmin", isAdmin);
-        return "index";
+    @GetMapping("/api/products/categories")
+    @ResponseBody
+    public List<String> getCategories() {
+        return productService.getAllCategories();
     }
 
-    @GetMapping("/products/{id}")
-    public String productDetails(@PathVariable Long id, Model model, Authentication authentication) {
+    @GetMapping("/products/{id:[0-9]+}")
+    public String productDetails(@PathVariable Long id, Model model) {
         ProductEntity product = productService.getProduct(id);
         model.addAttribute("product", product);
-
-        boolean isAdmin = false;
-        if (authentication != null && authentication.isAuthenticated()) {
-            isAdmin = authentication.getAuthorities().stream()
-                    .anyMatch(a ->
-                            Objects.equals(a.getAuthority(), RoleEnum.ADMIN.getAuthority())
-                    );
-        }
-        model.addAttribute("isAdmin", isAdmin);
-
         return "product-details";
     }
 
-    @GetMapping("/products/{id}/edit")
-    @PreAuthorize("hasRole(T(com.template.accessories.enums.RoleEnum).ADMIN)")
+    @GetMapping("/products/create")
+    @PreAuthorize("hasRole('ADMIN')")
+    public String createProductPage(Model model) {
+        ProductEntity product = new ProductEntity();
+        product.setInStock(true);
+        model.addAttribute("product", product);
+        model.addAttribute("isEdit", false);
+        model.addAttribute("categories", productService.getAllCategories());
+        return "product-form";
+    }
+
+    @PostMapping("/products/create")
+    @PreAuthorize("hasRole('ADMIN')")
+    public String createProduct(@ModelAttribute ProductEntity product,
+                                @RequestParam(value = "imageFile", required = false) MultipartFile imageFile,
+                                @RequestParam(value = "directImageUrl", required = false) String directImageUrl,
+                                RedirectAttributes redirectAttributes) {
+        try {
+            String uploadedUrl = fileStorageService.storeFile(imageFile);
+            if (uploadedUrl != null && !uploadedUrl.isBlank()) {
+                product.setImageUrl(uploadedUrl);
+            } else if (directImageUrl != null && !directImageUrl.isBlank()) {
+                product.setImageUrl(directImageUrl.trim());
+            }
+
+            if (product.getImageUrl() == null || product.getImageUrl().isBlank()) {
+                product.setImageUrl("/icon.png"); // Default fallback image
+            }
+
+            productService.createOrUpdateProduct(product);
+            redirectAttributes.addFlashAttribute("successMessage", "محصول «" + product.getName() + "» با موفقیت افزوده شد.");
+            return "redirect:/admin";
+        } catch (Exception e) {
+            log.error("Error creating product", e);
+            redirectAttributes.addFlashAttribute("errorMessage", "خطا در ایجاد محصول: " + e.getMessage());
+            return "redirect:/products/create";
+        }
+    }
+
+    @GetMapping("/products/{id:[0-9]+}/edit")
+    @PreAuthorize("hasRole('ADMIN')")
     public String editProductPage(@PathVariable Long id, Model model) {
         ProductEntity product = productService.getProduct(id);
         model.addAttribute("product", product);
         model.addAttribute("isEdit", true);
+        model.addAttribute("categories", productService.getAllCategories());
         return "product-form";
     }
 
-    @PostMapping("/products/{id}/edit")
-    @PreAuthorize("hasRole(T(com.template.accessories.enums.RoleEnum).ADMIN)")
+    @PostMapping("/products/{id:[0-9]+}/edit")
+    @PreAuthorize("hasRole('ADMIN')")
     public String editProduct(@PathVariable Long id,
                               @ModelAttribute ProductEntity updatedProduct,
                               @RequestParam(value = "imageFile", required = false) MultipartFile imageFile,
+                              @RequestParam(value = "directImageUrl", required = false) String directImageUrl,
                               RedirectAttributes redirectAttributes) {
-
-        ProductEntity product = productService.getProduct(id);
-
-        product.setImageUrl(createFile(imageFile, redirectAttributes));
-        product.setName(updatedProduct.getName());
-        product.setDescription(updatedProduct.getDescription());
-        product.setPrice(updatedProduct.getPrice());
-
-        productService.createOrUpdateProduct(product);
-        redirectAttributes.addFlashAttribute("message", "change success.");
-        return "redirect:/products/" + id;
-    }
-
-    private String createFile(MultipartFile imageFile, RedirectAttributes redirectAttributes) {
-        if (imageFile == null || imageFile.isEmpty()) {
-            return null;
-        }
-
         try {
-            String originalName = Objects.requireNonNull(
-                    imageFile.getOriginalFilename()
-            ).replaceAll("\\s+", "_");
-            String fileName = UUID.randomUUID() + "_" + originalName;
+            ProductEntity product = productService.getProduct(id);
 
-            String bucketName = "images";
-
-            String uploadUrl = url + "/storage/v1/object/" + bucketName + "/" + fileName;
-
-            HttpHeaders headers = new HttpHeaders();
-            headers.setBearerAuth(key);
-            headers.set("apikey", key);
-            headers.setContentType(MediaType.parseMediaType(Objects.requireNonNull(imageFile.getContentType())));
-
-            HttpEntity<byte[]> requestEntity = new HttpEntity<>(imageFile.getBytes(), headers);
-
-            ResponseEntity<String> response = restTemplate.exchange(
-                    uploadUrl,
-                    HttpMethod.POST,
-                    requestEntity,
-                    String.class
-            );
-
-            if (response.getStatusCode().is2xxSuccessful()) {
-                return url + "/storage/v1/object/public/" + bucketName + "/" + fileName;
-            } else {
-                throw new RuntimeException("sup base has error!" + response.getBody());
+            // Bug fix: only update imageUrl if a new file or direct URL was supplied
+            String newUploadedUrl = fileStorageService.storeFile(imageFile);
+            if (newUploadedUrl != null && !newUploadedUrl.isBlank()) {
+                // Delete old file if present
+                fileStorageService.deleteFile(product.getImageUrl());
+                product.setImageUrl(newUploadedUrl);
+            } else if (directImageUrl != null && !directImageUrl.isBlank()) {
+                product.setImageUrl(directImageUrl.trim());
             }
+            // else: keep existing product.getImageUrl()!
 
+            product.setName(updatedProduct.getName());
+            product.setDescription(updatedProduct.getDescription());
+            product.setPrice(updatedProduct.getPrice());
+            product.setCategory(updatedProduct.getCategory());
+            product.setInStock(updatedProduct.getInStock() != null && updatedProduct.getInStock());
+
+            productService.createOrUpdateProduct(product);
+            redirectAttributes.addFlashAttribute("successMessage", "تغییرات محصول با موفقیت ذخیره شد.");
+            return "redirect:/admin";
         } catch (Exception e) {
-            e.fillInStackTrace();
-            redirectAttributes.addFlashAttribute("message", "wrong when upload pic!" + e.getMessage());
-            return null;
+            log.error("Error updating product {}", id, e);
+            redirectAttributes.addFlashAttribute("errorMessage", "خطا در ویرایش محصول: " + e.getMessage());
+            return "redirect:/products/" + id + "/edit";
         }
     }
 
-    @PostMapping("/products/{id}/delete")
-    @PreAuthorize("hasRole(T(com.template.accessories.enums.RoleEnum).ADMIN)")
+    @PostMapping("/products/{id:[0-9]+}/delete")
+    @PreAuthorize("hasRole('ADMIN')")
     @ResponseBody
     public ResponseEntity<?> deleteProduct(@PathVariable Long id) {
-        ProductEntity product = productService.getProduct(id);
-        deleteFileFromStorage(product.getImageUrl());
-        productService.deleteProduct(id);
-        return ResponseEntity.ok().build();
-    }
-
-    private void deleteFileFromStorage(String fileUrlOrName) {
         try {
-            String fileName = extractFileName(fileUrlOrName);
-            String bucketName = "images";
-
-            String deleteUrl = url + "/storage/v1/object/" + bucketName + "/" + fileName;
-
-            HttpHeaders headers = new HttpHeaders();
-            headers.setBearerAuth(key);
-            headers.set("apikey", key);
-
-            HttpEntity<String> entity = new HttpEntity<>(headers);
-            ResponseEntity<String> response = restTemplate.exchange(
-                    deleteUrl,
-                    HttpMethod.DELETE,
-                    entity,
-                    String.class
-            );
-
-            System.out.println("Delete Success." + response.getStatusCode());
+            ProductEntity product = productService.getProduct(id);
+            if (product.getImageUrl() != null) {
+                fileStorageService.deleteFile(product.getImageUrl());
+            }
+            productService.deleteProduct(id);
+            return ResponseEntity.ok().body("{\"success\":true}");
         } catch (Exception e) {
-            System.err.println("Wrong When Delete File." + e.getMessage());
+            log.error("Error deleting product {}", id, e);
+            return ResponseEntity.badRequest().body("{\"success\":false,\"message\":\"" + e.getMessage() + "\"}");
         }
     }
 
-    private String extractFileName(String url) {
-        return url.substring(url.lastIndexOf("/") + 1);
+    @PostMapping("/products/{id:[0-9]+}/toggle-stock")
+    @PreAuthorize("hasRole('ADMIN')")
+    @ResponseBody
+    public ResponseEntity<?> toggleStock(@PathVariable Long id) {
+        try {
+            ProductEntity updated = productService.toggleStock(id);
+            return ResponseEntity.ok().body("{\"success\":true,\"inStock\":" + updated.isInStock() + "}");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("{\"success\":false,\"message\":\"" + e.getMessage() + "\"}");
+        }
     }
 }

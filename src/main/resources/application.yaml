@@ -13,6 +13,10 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
     show-sql: true
+  servlet:
+    multipart:
+      max-file-size: 15MB
+      max-request-size: 20MB
   application:
     name: accessories
 
@@ -29,7 +33,15 @@ app:
     password: ${ADMIN_PASSWORD}
     chat-id: ${ADMIN_CHAT_IDS}
   upload:
-    dir: ${UPLOAD_DIR}
+    dir: ${UPLOAD_DIR:/tmp/accessories-uploads}
+  seller:
+    name: ${SELLER_NAME:nodehi}
+    phone: ${SELLER_PHONE:09120001234}
+    telegram: ${SELLER_TELEGRAM:mhmd928787}
+    instagram: ${SELLER_INSTAGRAM:mhmd928787}
+    bale: ${SELLER_BALE:mhmd928787}
+    whatsapp: ${SELLER_WHATSAPP:09120001234}
+    address: ${SELLER_ADDRESS:address}
 
 supabase:
   url: ${SUP_BASE_URL}
