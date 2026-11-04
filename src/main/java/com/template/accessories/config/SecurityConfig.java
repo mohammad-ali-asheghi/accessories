@@ -9,6 +9,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -19,10 +20,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.Duration;
+
 @Slf4j
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity()
+@EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
 
     @Value("${app.admin.mobile:09902904565}")
@@ -43,9 +46,9 @@ public class SecurityConfig {
                         // Static assets
                         .requestMatchers("/css/**", "/js/**", "/fonts/**", "/images/**", "/uploads/**", "/icon.png", "/favicon.ico").permitAll()
                         // Public storefront pages & endpoints
-                        .requestMatchers("/login", "/otp/**").permitAll()
+                        .requestMatchers("/", "/login", "/otp/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/products/{id:[0-9]+}").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/products", "/api/products/**").permitAll()
                         // Admin restricted endpoints
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         .requestMatchers("/products/create").hasRole("ADMIN")
@@ -118,6 +121,9 @@ public class SecurityConfig {
 
     @Bean
     public RestTemplate restTemplate() {
-        return new RestTemplate();
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(Duration.ofSeconds(4));
+        factory.setReadTimeout(Duration.ofSeconds(4));
+        return new RestTemplate(factory);
     }
 }

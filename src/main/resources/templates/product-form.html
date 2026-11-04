@@ -62,7 +62,8 @@
             <!-- In Stock Switch -->
             <div class="form-group checkbox-group">
                 <label class="switch-container">
-                    <input type="checkbox" id="inStock" th:field="*{inStock}">
+                    <input type="checkbox" id="inStock" name="inStock" value="true" th:checked="${product.inStock}">
+                    <input type="hidden" name="_inStock" value="on"/>
                     <span class="switch-slider"></span>
                     <span class="switch-label">این محصول در انبار موجود است و قابل سفارش می‌باشد</span>
                 </label>

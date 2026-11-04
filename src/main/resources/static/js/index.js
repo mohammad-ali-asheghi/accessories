@@ -19,7 +19,17 @@ document.addEventListener('DOMContentLoaded', () => {
     initSearch();
     initCategories();
     initFlashToast();
-    loadProducts();
+
+    const container = document.getElementById('product-container');
+    const existingCards = container ? container.querySelectorAll('.product-card').length : 0;
+    if (existingCards > 0) {
+        // Page 0 was already rendered by server! Next page for infinite scroll is 1
+        currentPage = 1;
+    } else {
+        // No server-side cards, fetch page 0
+        currentPage = 0;
+        loadProducts();
+    }
 
     // Infinite scroll
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -207,13 +217,13 @@ function createProductCard(product) {
 
     // Stock Badge
     const stockBadge = clone.querySelector('.stock-badge');
-    const inStock = product.inStock == null ? true : product.inStock;
+    const inStock = product.inStock === true || product.inStock === 'true';
     if (inStock) {
         stockBadge.className = 'stock-badge badge badge-emerald';
         stockBadge.innerHTML = '<span class="pulse-dot"></span><span>موجود</span>';
     } else {
         stockBadge.className = 'stock-badge badge badge-rose';
-        stockBadge.textContent = 'ناموجود';
+        stockBadge.innerHTML = '<span>ناموجود</span>';
     }
 
     // Category Tag

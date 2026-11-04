@@ -26,6 +26,9 @@ public class ProductController {
 
     @GetMapping("/")
     public String index(Model model) {
+        Page<ProductEntity> initialProducts = productService.getProductList(0, 12, null);
+        model.addAttribute("products", initialProducts.getContent());
+        model.addAttribute("hasMore", initialProducts.hasNext());
         model.addAttribute("categories", productService.getAllCategories());
         return "index";
     }
@@ -91,8 +94,9 @@ public class ProductController {
                 product.setImageUrl("/icon.png"); // Default fallback image
             }
 
-            productService.createOrUpdateProduct(product);
-            redirectAttributes.addFlashAttribute("successMessage", "محصول «" + product.getName() + "» با موفقیت افزوده شد.");
+            ProductEntity saved = productService.createOrUpdateProduct(product);
+            log.info("Successfully created product: id={}, name={}, inStock={}", saved.getId(), saved.getName(), saved.isInStock());
+            redirectAttributes.addFlashAttribute("successMessage", "محصول «" + saved.getName() + "» با موفقیت افزوده شد.");
             return "redirect:/admin";
         } catch (Exception e) {
             log.error("Error creating product", e);
@@ -136,9 +140,10 @@ public class ProductController {
             product.setDescription(updatedProduct.getDescription());
             product.setPrice(updatedProduct.getPrice());
             product.setCategory(updatedProduct.getCategory());
-            product.setInStock(updatedProduct.getInStock() != null && updatedProduct.getInStock());
+            product.setInStock(updatedProduct.isInStock());
 
-            productService.createOrUpdateProduct(product);
+            ProductEntity saved = productService.createOrUpdateProduct(product);
+            log.info("Successfully updated product: id={}, name={}, inStock={}", saved.getId(), saved.getName(), saved.isInStock());
             redirectAttributes.addFlashAttribute("successMessage", "تغییرات محصول با موفقیت ذخیره شد.");
             return "redirect:/admin";
         } catch (Exception e) {

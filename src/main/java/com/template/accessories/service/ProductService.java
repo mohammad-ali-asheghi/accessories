@@ -10,6 +10,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -19,10 +20,11 @@ public class ProductService {
     private final ProductRepository productRepository;
 
     @Transactional(rollbackFor = Exception.class)
-    public void createOrUpdateProduct(ProductEntity entity) {
-        if (entity.getInStock() == null) {
-            entity.setInStock(true);
+    public ProductEntity createOrUpdateProduct(ProductEntity entity) {
+        if (entity.getCreatedAt() == null) {
+            entity.setCreatedAt(LocalDateTime.now());
         }
+        return productRepository.save(entity);
     }
 
     @Transactional(rollbackFor = Exception.class)

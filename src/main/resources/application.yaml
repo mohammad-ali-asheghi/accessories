@@ -43,6 +43,6 @@ app:
     whatsapp: ${SELLER_WHATSAPP:09120001234}
     address: ${SELLER_ADDRESS:address}
 
-supabase:
-  url: ${SUP_BASE_URL}
-  key: ${SUP_BASE_KEY}
+#supabase:
+#  url: ${SUP_BASE_URL}
+#  key: ${SUP_BASE_KEY}

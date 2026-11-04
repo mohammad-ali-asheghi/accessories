@@ -33,13 +33,9 @@ public class ProductEntity {
     @Column(name = "category")
     private String category;
 
-    @Column(name = "in_stock")
-    private Boolean inStock = true;
+    @Column(name = "in_stock", nullable = false)
+    private boolean inStock = true;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
-
-    public boolean isInStock() {
-        return inStock == null || inStock;
-    }
 }

@@ -74,11 +74,11 @@
                          onerror="this.src='/icon.png'">
                     
                     <div class="stock-pill-overlay">
-                        <span th:if="${product.inStock == null or product.inStock}" class="badge badge-emerald">
+                        <span th:if="${product.inStock}" class="badge badge-emerald">
                             <span class="pulse-dot"></span>
                             موجود در انبار
                         </span>
-                        <span th:unless="${product.inStock == null or product.inStock}" class="badge badge-rose">
+                        <span th:unless="${product.inStock}" class="badge badge-rose">
                             اتمام موجودی
                         </span>
                     </div>
@@ -224,7 +224,7 @@
                                 <polyline points="1 20 1 14 7 14"></polyline>
                                 <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
                             </svg>
-                            <span id="stock-text" th:text="${product.inStock == null or product.inStock} ? 'علامت به عنوان ناموجود' : 'علامت به عنوان موجود'">تغییر موجودی</span>
+                            <span id="stock-text" th:text="${product.inStock} ? 'علامت به عنوان ناموجود' : 'علامت به عنوان موجود'">تغییر موجودی</span>
                         </button>
 
                         <button type="button" class="btn btn-danger" th:onclick="'deleteProduct(' + ${product.id} + ')'">

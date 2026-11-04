@@ -185,11 +185,11 @@
                             </td>
                             <td class="col-stock">
                                 <button type="button"
-                                        th:class="'stock-toggle-btn ' + (${item.inStock == null or item.inStock} ? 'in-stock' : 'out-of-stock')"
+                                        th:class="'stock-toggle-btn ' + (${item.inStock} ? 'in-stock' : 'out-of-stock')"
                                         th:onclick="'toggleStock(' + ${item.id} + ')'"
                                         th:id="'stock-btn-' + ${item.id}">
                                     <span class="stock-dot"></span>
-                                    <span class="stock-label" th:text="${item.inStock == null or item.inStock} ? 'موجود' : 'ناموجود'">موجود</span>
+                                    <span class="stock-label" th:text="${item.inStock} ? 'موجود' : 'ناموجود'">موجود</span>
                                 </button>
                             </td>
                             <td class="col-actions">
