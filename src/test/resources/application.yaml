@@ -1,0 +1,22 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:accessories_test;DB_CLOSE_DELAY=-1;MODE=PostgreSQL
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+    show-sql: false
+
+app:
+  admin:
+    mobile: 09120000000
+    password: testpassword
+    chat-id: 0
+  upload:
+    dir: ${java.io.tmpdir}/accessories-test-uploads

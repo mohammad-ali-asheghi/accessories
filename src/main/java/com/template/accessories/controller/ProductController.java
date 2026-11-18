@@ -14,7 +14,9 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Controller
@@ -60,8 +62,9 @@ public class ProductController {
 
     @GetMapping("/products/{id:[0-9]+}")
     public String productDetails(@PathVariable Long id, Model model) {
-        ProductEntity product = productService.getProduct(id);
+        ProductEntity product = productService.getProductWithImages(id);
         model.addAttribute("product", product);
+        model.addAttribute("galleryImages", product.getGalleryImageUrls());
         return "product-details";
     }
 
@@ -79,23 +82,21 @@ public class ProductController {
     @PostMapping("/products/create")
     @PreAuthorize("hasRole('ADMIN')")
     public String createProduct(@ModelAttribute ProductEntity product,
-                                @RequestParam(value = "imageFile", required = false) MultipartFile imageFile,
-                                @RequestParam(value = "directImageUrl", required = false) String directImageUrl,
+                                @RequestParam(value = "imageFiles", required = false) List<MultipartFile> imageFiles,
+                                @RequestParam(value = "directImageUrls", required = false) String directImageUrls,
                                 RedirectAttributes redirectAttributes) {
         try {
-            String uploadedUrl = fileStorageService.storeFile(imageFile);
-            if (uploadedUrl != null && !uploadedUrl.isBlank()) {
-                product.setImageUrl(uploadedUrl);
-            } else if (directImageUrl != null && !directImageUrl.isBlank()) {
-                product.setImageUrl(directImageUrl.trim());
-            }
+            validateProductInput(product);
 
-            if (product.getImageUrl() == null || product.getImageUrl().isBlank()) {
-                product.setImageUrl("/icon.png"); // Default fallback image
-            }
+            List<String> allImageUrls = new ArrayList<>();
+            allImageUrls.addAll(fileStorageService.storeFiles(imageFiles));
+            allImageUrls.addAll(parseDirectUrls(directImageUrls));
 
             ProductEntity saved = productService.createOrUpdateProduct(product);
-            log.info("Successfully created product: id={}, name={}, inStock={}", saved.getId(), saved.getName(), saved.isInStock());
+            saved = productService.addImagesToProduct(saved, allImageUrls);
+
+            log.info("Successfully created product: id={}, name={}, images={}, inStock={}",
+                    saved.getId(), saved.getName(), saved.getImageCount(), saved.isInStock());
             redirectAttributes.addFlashAttribute("successMessage", "محصول «" + saved.getName() + "» با موفقیت افزوده شد.");
             return "redirect:/admin";
         } catch (Exception e) {
@@ -108,7 +109,7 @@ public class ProductController {
     @GetMapping("/products/{id:[0-9]+}/edit")
     @PreAuthorize("hasRole('ADMIN')")
     public String editProductPage(@PathVariable Long id, Model model) {
-        ProductEntity product = productService.getProduct(id);
+        ProductEntity product = productService.getProductWithImages(id);
         model.addAttribute("product", product);
         model.addAttribute("isEdit", true);
         model.addAttribute("categories", productService.getAllCategories());
@@ -119,31 +120,26 @@ public class ProductController {
     @PreAuthorize("hasRole('ADMIN')")
     public String editProduct(@PathVariable Long id,
                               @ModelAttribute ProductEntity updatedProduct,
-                              @RequestParam(value = "imageFile", required = false) MultipartFile imageFile,
-                              @RequestParam(value = "directImageUrl", required = false) String directImageUrl,
+                              @RequestParam(value = "imageFiles", required = false) List<MultipartFile> imageFiles,
+                              @RequestParam(value = "directImageUrls", required = false) String directImageUrls,
                               RedirectAttributes redirectAttributes) {
         try {
-            ProductEntity product = productService.getProduct(id);
+            validateProductInput(updatedProduct);
+            ProductEntity product = productService.getProductWithImages(id);
 
-            // Bug fix: only update imageUrl if a new file or direct URL was supplied
-            String newUploadedUrl = fileStorageService.storeFile(imageFile);
-            if (newUploadedUrl != null && !newUploadedUrl.isBlank()) {
-                // Delete old file if present
-                fileStorageService.deleteFile(product.getImageUrl());
-                product.setImageUrl(newUploadedUrl);
-            } else if (directImageUrl != null && !directImageUrl.isBlank()) {
-                product.setImageUrl(directImageUrl.trim());
-            }
-            // else: keep existing product.getImageUrl()!
-
-            product.setName(updatedProduct.getName());
+            product.setName(updatedProduct.getName().trim());
             product.setDescription(updatedProduct.getDescription());
             product.setPrice(updatedProduct.getPrice());
-            product.setCategory(updatedProduct.getCategory());
+            product.setCategory(updatedProduct.getCategory() != null ? updatedProduct.getCategory().trim() : null);
             product.setInStock(updatedProduct.isInStock());
 
-            ProductEntity saved = productService.createOrUpdateProduct(product);
-            log.info("Successfully updated product: id={}, name={}, inStock={}", saved.getId(), saved.getName(), saved.isInStock());
+            List<String> newImageUrls = new ArrayList<>();
+            newImageUrls.addAll(fileStorageService.storeFiles(imageFiles));
+            newImageUrls.addAll(parseDirectUrls(directImageUrls));
+
+            ProductEntity saved = productService.addImagesToProduct(product, newImageUrls);
+            log.info("Successfully updated product: id={}, name={}, images={}, inStock={}",
+                    saved.getId(), saved.getName(), saved.getImageCount(), saved.isInStock());
             redirectAttributes.addFlashAttribute("successMessage", "تغییرات محصول با موفقیت ذخیره شد.");
             return "redirect:/admin";
         } catch (Exception e) {
@@ -153,32 +149,85 @@ public class ProductController {
         }
     }
 
+    @PostMapping("/products/{id:[0-9]+}/images/{imageId:[0-9]+}/primary")
+    @PreAuthorize("hasRole('ADMIN')")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> setPrimaryImage(@PathVariable Long id, @PathVariable Long imageId) {
+        try {
+            ProductEntity updated = productService.setPrimaryImage(id, imageId);
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "imageUrl", updated.getImageUrl()
+            ));
+        } catch (Exception e) {
+            log.error("Error setting primary image {} for product {}", imageId, id, e);
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/products/{id:[0-9]+}/images/{imageId:[0-9]+}/delete")
+    @PreAuthorize("hasRole('ADMIN')")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> deleteProductImage(@PathVariable Long id, @PathVariable Long imageId) {
+        try {
+            ProductEntity updated = productService.deleteProductImage(id, imageId);
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "imageCount", updated.getImageCount(),
+                    "imageUrl", updated.getImageUrl()
+            ));
+        } catch (Exception e) {
+            log.error("Error deleting image {} for product {}", imageId, id, e);
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
+        }
+    }
+
     @PostMapping("/products/{id:[0-9]+}/delete")
     @PreAuthorize("hasRole('ADMIN')")
     @ResponseBody
-    public ResponseEntity<?> deleteProduct(@PathVariable Long id) {
+    public ResponseEntity<Map<String, Object>> deleteProduct(@PathVariable Long id) {
         try {
-            ProductEntity product = productService.getProduct(id);
-            if (product.getImageUrl() != null) {
-                fileStorageService.deleteFile(product.getImageUrl());
-            }
             productService.deleteProduct(id);
-            return ResponseEntity.ok().body("{\"success\":true}");
+            return ResponseEntity.ok(Map.of("success", true));
         } catch (Exception e) {
             log.error("Error deleting product {}", id, e);
-            return ResponseEntity.badRequest().body("{\"success\":false,\"message\":\"" + e.getMessage() + "\"}");
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
         }
     }
 
     @PostMapping("/products/{id:[0-9]+}/toggle-stock")
     @PreAuthorize("hasRole('ADMIN')")
     @ResponseBody
-    public ResponseEntity<?> toggleStock(@PathVariable Long id) {
+    public ResponseEntity<Map<String, Object>> toggleStock(@PathVariable Long id) {
         try {
             ProductEntity updated = productService.toggleStock(id);
-            return ResponseEntity.ok().body("{\"success\":true,\"inStock\":" + updated.isInStock() + "}");
+            return ResponseEntity.ok(Map.of("success", true, "inStock", updated.isInStock()));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body("{\"success\":false,\"message\":\"" + e.getMessage() + "\"}");
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
         }
+    }
+
+    private void validateProductInput(ProductEntity product) {
+        if (product.getName() == null || product.getName().trim().isEmpty()) {
+            throw new IllegalArgumentException("نام محصول نمی‌تواند خالی باشد.");
+        }
+        if (product.getPrice() != null && product.getPrice() < 0) {
+            throw new IllegalArgumentException("قیمت محصول نمی‌تواند منفی باشد.");
+        }
+    }
+
+    private List<String> parseDirectUrls(String rawUrls) {
+        List<String> urls = new ArrayList<>();
+        if (rawUrls == null || rawUrls.isBlank()) {
+            return urls;
+        }
+        String[] lines = rawUrls.split("\\r?\\n");
+        for (String line : lines) {
+            String trimmed = line.trim();
+            if (!trimmed.isEmpty() && (trimmed.startsWith("http://") || trimmed.startsWith("https://") || trimmed.startsWith("/"))) {
+                urls.add(trimmed);
+            }
+        }
+        return urls;
     }
 }

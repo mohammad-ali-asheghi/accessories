@@ -11,12 +11,14 @@
 </head>
 <body>
 
+<div id="toast-container" class="toast-container"></div>
+
 <div class="form-page">
     <div class="form-card glass-card">
         <div class="form-header">
             <span class="badge badge-amber" th:text="${isEdit} ? 'ویرایش کالا' : 'کالای جدید'">فرم محصول</span>
             <h1 class="form-title" th:text="${isEdit} ? 'ویرایش اطلاعات محصول' : 'افزودن محصول جدید به ویترین'"></h1>
-            <p class="form-sub">مشخصات، تصویر و قیمت محصول را جهت نمایش به کاربران وارد نمایید.</p>
+            <p class="form-sub">مشخصات، گالری تصاویر و قیمت محصول را جهت نمایش به کاربران وارد نمایید.</p>
         </div>
 
         <div th:if="${errorMessage}" class="alert-box error" th:text="${errorMessage}"></div>
@@ -69,38 +71,59 @@
                 </label>
             </div>
 
-            <!-- Image Upload & Preview -->
-            <div class="form-group image-upload-group">
-                <label>تصویر محصول</label>
-
-                <div class="image-preview-container">
-                    <div class="preview-box" id="preview-box">
-                        <img th:src="${product.imageUrl != null and !product.imageUrl.isBlank()} ? ${product.imageUrl} : @{/icon.png}"
-                             id="image-preview-elem"
-                             alt="پیش‌نمایش تصویر"
-                             onerror="this.src='/icon.png'">
+            <!-- Existing Images Management (Edit Mode) -->
+            <div class="form-group" th:if="${isEdit and product.images != null and !product.images.isEmpty()}">
+                <label>تصاویر فعلی محصول (<span id="existing-count" th:text="${product.images.size()}">0</span> تصویر)</label>
+                <div class="existing-images-grid" id="existing-images-grid">
+                    <div th:each="img : ${product.images}"
+                         class="gallery-admin-item"
+                         th:classappend="${img.primary} ? 'is-primary' : ''"
+                         th:id="'existing-img-' + ${img.id}">
+                        <img th:src="${img.imageUrl}" alt="تصویر محصول" onerror="this.src='/icon.png'">
+                        <span class="primary-badge" th:style="${img.primary} ? 'display:inline-flex;' : 'display:none;'">عکس اصلی</span>
+                        <div class="img-actions">
+                            <button type="button"
+                                    class="img-action-btn primary-btn"
+                                    th:onclick="'setPrimaryImage(' + ${product.id} + ', ' + ${img.id} + ')'"
+                                    title="انتخاب به عنوان عکس اصلی">★</button>
+                            <button type="button"
+                                    class="img-action-btn delete-btn"
+                                    th:onclick="'deleteExistingImage(' + ${product.id} + ', ' + ${img.id} + ')'"
+                                    title="حذف تصویر">✕</button>
+                        </div>
                     </div>
+                </div>
+            </div>
 
+            <!-- Multi-Image Upload & Preview -->
+            <div class="form-group image-upload-group">
+                <label th:text="${isEdit} ? 'افزودن تصاویر جدید به گالری' : 'تصاویر محصول (امکان انتخاب چند عکس هم‌زمان)'">تصاویر محصول</label>
+
+                <div class="multi-upload-box">
                     <div class="upload-options">
-                        <label for="imageFile" class="file-upload-btn">
+                        <label for="imageFiles" class="file-upload-btn">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                                 <polyline points="17 8 12 3 7 8"></polyline>
                                 <line x1="12" y1="3" x2="12" y2="15"></line>
                             </svg>
-                            <span>انتخاب عکس از دستگاه</span>
-                            <input type="file" id="imageFile" name="imageFile" accept="image/*">
+                            <span>انتخاب یک یا چند عکس از دستگاه</span>
+                            <input type="file" id="imageFiles" name="imageFiles" accept="image/jpeg,image/png,image/webp,image/gif" multiple>
                         </label>
 
-                        <span class="or-separator">یا آدرس مستقیم تصویر (URL):</span>
+                        <span class="field-hint">فرمت‌های مجاز: JPG, PNG, WebP, GIF (حداکثر ۱۰ مگابایت برای هر عکس)</span>
 
-                        <input type="url" id="directImageUrl" name="directImageUrl"
-                               placeholder="https://example.com/image.jpg"
-                               th:value="${isEdit ? product.imageUrl : ''}"
-                               class="url-input">
+                        <!-- Live preview of newly selected files -->
+                        <div id="new-previews-grid" class="new-previews-grid" style="display:none;"></div>
+
+                        <span class="or-separator">یا آدرس مستقیم تصاویر (هر لینک در یک خط):</span>
+
+                        <textarea id="directImageUrls" name="directImageUrls" rows="2"
+                                  placeholder="https://example.com/image-1.jpg&#10;https://example.com/image-2.jpg"
+                                  class="url-input"></textarea>
 
                         <p class="upload-help" th:if="${isEdit}">
-                            💡 نکته: در صورتی که مایل به حفظ تصویر قبلی هستید، نیازی به انتخاب عکس جدید نیست.
+                            💡 تصاویر جدید به گالری فعلی اضافه می‌شوند. برای تغییر عکس اصلی یا حذف، از دکمه‌های روی تصاویر بالا استفاده کنید.
                         </p>
                     </div>
                 </div>
@@ -131,6 +154,19 @@
 </div>
 
 <script>
+function showToast(message, type = 'success') {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.innerHTML = `<span>${message}</span>`;
+    container.appendChild(toast);
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 400);
+    }, 3000);
+}
+
 // Price preview helper
 const priceInput = document.getElementById('price');
 const pricePreview = document.getElementById('price-preview');
@@ -153,31 +189,110 @@ if (priceInput) {
     updatePricePreview();
 }
 
-// Live Image Preview
-const imageFileInput = document.getElementById('imageFile');
-const directUrlInput = document.getElementById('directImageUrl');
-const previewElem = document.getElementById('image-preview-elem');
+// Multi-file selection with preview & individual removal
+const imageFilesInput = document.getElementById('imageFiles');
+const previewsGrid = document.getElementById('new-previews-grid');
+let selectedFilesDT = new DataTransfer();
 
-if (imageFileInput) {
-    imageFileInput.addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function(evt) {
-                previewElem.src = evt.target.result;
-            };
-            reader.readAsDataURL(file);
-        }
+function renderNewPreviews() {
+    if (!previewsGrid) return;
+    previewsGrid.innerHTML = '';
+    const files = selectedFilesDT.files;
+    if (files.length === 0) {
+        previewsGrid.style.display = 'none';
+        return;
+    }
+    previewsGrid.style.display = 'grid';
+
+    Array.from(files).forEach((file, index) => {
+        const item = document.createElement('div');
+        item.className = 'gallery-admin-item new-file-item';
+
+        const img = document.createElement('img');
+        img.alt = file.name;
+        const reader = new FileReader();
+        reader.onload = (e) => { img.src = e.target.result; };
+        reader.readAsDataURL(file);
+
+        const badge = document.createElement('span');
+        badge.className = 'new-file-badge';
+        badge.textContent = 'جدید';
+
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'img-action-btn delete-btn single-remove';
+        removeBtn.textContent = '✕';
+        removeBtn.title = 'حذف از لیست آپلود';
+        removeBtn.onclick = () => removeSelectedFile(index);
+
+        item.appendChild(img);
+        item.appendChild(badge);
+        item.appendChild(removeBtn);
+        previewsGrid.appendChild(item);
     });
 }
 
-if (directUrlInput) {
-    directUrlInput.addEventListener('input', function() {
-        const url = directUrlInput.value.trim();
-        if (url) {
-            previewElem.src = url;
-        }
+function removeSelectedFile(indexToRemove) {
+    const newDT = new DataTransfer();
+    Array.from(selectedFilesDT.files).forEach((file, idx) => {
+        if (idx !== indexToRemove) newDT.items.add(file);
     });
+    selectedFilesDT = newDT;
+    imageFilesInput.files = selectedFilesDT.files;
+    renderNewPreviews();
+}
+
+if (imageFilesInput) {
+    imageFilesInput.addEventListener('change', (e) => {
+        Array.from(e.target.files).forEach(file => {
+            selectedFilesDT.items.add(file);
+        });
+        imageFilesInput.files = selectedFilesDT.files;
+        renderNewPreviews();
+    });
+}
+
+// Existing image actions (Edit mode)
+function setPrimaryImage(productId, imageId) {
+    fetch(`/products/${productId}/images/${imageId}/primary`, { method: 'POST' })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                document.querySelectorAll('#existing-images-grid .gallery-admin-item').forEach(el => {
+                    el.classList.remove('is-primary');
+                    const badge = el.querySelector('.primary-badge');
+                    if (badge) badge.style.display = 'none';
+                });
+                const target = document.getElementById(`existing-img-${imageId}`);
+                if (target) {
+                    target.classList.add('is-primary');
+                    const badge = target.querySelector('.primary-badge');
+                    if (badge) badge.style.display = 'inline-flex';
+                }
+                showToast('تصویر اصلی محصول تغییر کرد.');
+            } else {
+                showToast(data.message || 'خطا در تغییر تصویر اصلی', 'error');
+            }
+        })
+        .catch(() => showToast('خطای ارتباط با سرور', 'error'));
+}
+
+function deleteExistingImage(productId, imageId) {
+    if (!confirm('آیا از حذف این تصویر اطمینان دارید؟')) return;
+    fetch(`/products/${productId}/images/${imageId}/delete`, { method: 'POST' })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                const el = document.getElementById(`existing-img-${imageId}`);
+                if (el) el.remove();
+                const countEl = document.getElementById('existing-count');
+                if (countEl) countEl.textContent = data.imageCount;
+                showToast('تصویر با موفقیت حذف شد.');
+            } else {
+                showToast(data.message || 'خطا در حذف تصویر', 'error');
+            }
+        })
+        .catch(() => showToast('خطای ارتباط با سرور', 'error'));
 }
 </script>
 </body>

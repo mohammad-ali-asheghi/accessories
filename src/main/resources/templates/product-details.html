@@ -64,15 +64,16 @@
 
         <!-- Product Presentation Grid -->
         <div class="product-layout glass-card">
-            <!-- Product Image Showcase -->
+            <!-- Product Multi-Image Gallery Showcase -->
             <div class="product-visual">
-                <div class="image-frame">
-                    <img th:src="${product.imageUrl != null and !product.imageUrl.isBlank()} ? ${product.imageUrl} : @{/icon.png}"
+                <div class="image-frame" id="gallery-frame">
+                    <img th:src="${galleryImages != null and !galleryImages.isEmpty()} ? ${galleryImages[0]} : @{/icon.png}"
                          th:alt="${product.name}"
                          class="main-product-image"
                          id="main-img"
+                         onclick="openLightbox()"
                          onerror="this.src='/icon.png'">
-                    
+
                     <div class="stock-pill-overlay">
                         <span th:if="${product.inStock}" class="badge badge-emerald">
                             <span class="pulse-dot"></span>
@@ -88,6 +89,26 @@
                           th:text="${product.category}">
                         دستبند
                     </span>
+
+                    <!-- Gallery Navigation Arrows & Counter (only when > 1 image) -->
+                    <th:block th:if="${galleryImages != null and galleryImages.size() > 1}">
+                        <button type="button" class="gallery-nav prev-btn" onclick="changeSlide(-1)" aria-label="تصویر قبلی">‹</button>
+                        <button type="button" class="gallery-nav next-btn" onclick="changeSlide(1)" aria-label="تصویر بعدی">›</button>
+                        <div class="gallery-counter" id="gallery-counter"
+                             th:text="'1 / ' + ${galleryImages.size()}">1 / 1</div>
+                    </th:block>
+                </div>
+
+                <!-- Thumbnail Strip -->
+                <div class="gallery-thumbs" id="gallery-thumbs" th:if="${galleryImages != null and galleryImages.size() > 1}">
+                    <button type="button"
+                            th:each="imgUrl, iter : ${galleryImages}"
+                            class="thumb-btn"
+                            th:classappend="${iter.index == 0} ? 'active' : ''"
+                            th:attr="data-index=${iter.index}, data-src=${imgUrl}"
+                            onclick="selectSlide(this)">
+                        <img th:src="${imgUrl}" th:alt="${product.name}" loading="lazy" onerror="this.src='/icon.png'">
+                    </button>
                 </div>
             </div>
 
@@ -242,6 +263,12 @@
     </div>
 </main>
 
+<!-- Fullscreen Lightbox Modal -->
+<div id="lightbox-modal" class="lightbox-modal" onclick="closeLightbox(event)">
+    <button type="button" class="lightbox-close" onclick="closeLightbox()">&times;</button>
+    <img id="lightbox-img" src="" alt="نمای بزرگ محصول" onclick="event.stopPropagation()">
+</div>
+
 <!-- Mobile Sticky Bottom Action Bar -->
 <div class="mobile-sticky-bar glass">
     <div class="mobile-bar-inner">
@@ -266,6 +293,81 @@
 </div>
 
 <script>
+// Multi-image gallery controller
+const thumbButtons = Array.from(document.querySelectorAll('#gallery-thumbs .thumb-btn'));
+const mainImg = document.getElementById('main-img');
+const counterEl = document.getElementById('gallery-counter');
+let currentSlideIndex = 0;
+
+function updateGallery(index) {
+    if (thumbButtons.length === 0) return;
+    currentSlideIndex = (index + thumbButtons.length) % thumbButtons.length;
+    const activeBtn = thumbButtons[currentSlideIndex];
+    const newSrc = activeBtn.dataset.src;
+
+    if (mainImg && newSrc) {
+        mainImg.src = newSrc;
+    }
+    thumbButtons.forEach((btn, idx) => {
+        btn.classList.toggle('active', idx === currentSlideIndex);
+    });
+    activeBtn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    if (counterEl) {
+        counterEl.textContent = `${currentSlideIndex + 1} / ${thumbButtons.length}`;
+    }
+}
+
+function selectSlide(btn) {
+    const idx = parseInt(btn.dataset.index, 10);
+    if (!isNaN(idx)) updateGallery(idx);
+}
+
+function changeSlide(delta) {
+    updateGallery(currentSlideIndex + delta);
+}
+
+// Keyboard & Touch Swipe support
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeLightbox();
+    if (thumbButtons.length > 1) {
+        if (e.key === 'ArrowLeft') changeSlide(1);
+        if (e.key === 'ArrowRight') changeSlide(-1);
+    }
+});
+
+const galleryFrame = document.getElementById('gallery-frame');
+if (galleryFrame && thumbButtons.length > 1) {
+    let touchStartX = 0;
+    galleryFrame.addEventListener('touchstart', (e) => {
+        touchStartX = e.changedTouches[0].screenX;
+    }, { passive: true });
+    galleryFrame.addEventListener('touchend', (e) => {
+        const diff = e.changedTouches[0].screenX - touchStartX;
+        if (Math.abs(diff) > 45) {
+            changeSlide(diff > 0 ? -1 : 1);
+        }
+    }, { passive: true });
+}
+
+// Lightbox
+function openLightbox() {
+    const modal = document.getElementById('lightbox-modal');
+    const lbImg = document.getElementById('lightbox-img');
+    if (modal && lbImg && mainImg) {
+        lbImg.src = mainImg.src;
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function closeLightbox() {
+    const modal = document.getElementById('lightbox-modal');
+    if (modal) {
+        modal.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+}
+
 function shareProduct() {
     if (navigator.share) {
         navigator.share({

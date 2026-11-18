@@ -28,23 +28,23 @@ import java.time.Duration;
 @EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
 
-    @Value("${app.admin.mobile:09902904565}")
+    @Value("${app.admin.mobile:}")
     private String mobileNumbers;
 
-    @Value("${app.admin.password:admin1234}")
+    @Value("${app.admin.password:}")
     private String adminPassword;
 
-    @Value("${app.admin.chat-id:1979392472}")
+    @Value("${app.admin.chat-id:}")
     private String chatIds;
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable))
                 .authorizeHttpRequests(auth -> auth
                         // Static assets
-                        .requestMatchers("/css/**", "/js/**", "/fonts/**", "/images/**", "/uploads/**", "/icon.png", "/favicon.ico").permitAll()
+                        .requestMatchers("/css/**", "/js/**", "/fonts/**", "/images/**", "/uploads/**", "/icon.png", "/favicon.ico", "/error").permitAll()
                         // Public storefront pages & endpoints
                         .requestMatchers("/", "/login", "/otp/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/products/{id:[0-9]+}").permitAll()
@@ -55,6 +55,7 @@ public class SecurityConfig {
                         .requestMatchers("/products/*/edit").hasRole("ADMIN")
                         .requestMatchers("/products/*/delete").hasRole("ADMIN")
                         .requestMatchers("/products/*/toggle-stock").hasRole("ADMIN")
+                        .requestMatchers("/products/*/images/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .logout(logout -> logout
@@ -77,13 +78,13 @@ public class SecurityConfig {
     CommandLineRunner createAdmin(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         return args -> {
             try {
-                if (mobileNumbers == null || mobileNumbers.isBlank() || chatIds == null || chatIds.isBlank()) {
-                    log.warn("Admin mobile or chat ID configuration is empty.");
+                if (mobileNumbers == null || mobileNumbers.isBlank() || adminPassword == null || adminPassword.isBlank()) {
+                    log.warn("ADMIN_MOBILES or ADMIN_PASSWORD environment variable is not set. Skipping initial admin seeding.");
                     return;
                 }
 
                 String[] mobiles = mobileNumbers.split(",");
-                String[] chats = chatIds.split(",");
+                String[] chats = (chatIds != null && !chatIds.isBlank()) ? chatIds.split(",") : new String[0];
 
                 for (int i = 0; i < mobiles.length; i++) {
                     String mobile = mobiles[i].trim();
@@ -96,7 +97,7 @@ public class SecurityConfig {
                     userRepository.findByUsername(mobile).ifPresentOrElse(
                             existing -> {
                                 log.info("Admin user {} already exists.", mobile);
-                                if (existing.getChatId() == 0L) {
+                                if (existing.getChatId() == 0L && chatId != 0L) {
                                     existing.setChatId(chatId);
                                     userRepository.save(existing);
                                 }
@@ -122,8 +123,8 @@ public class SecurityConfig {
     @Bean
     public RestTemplate restTemplate() {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-        factory.setConnectTimeout(Duration.ofSeconds(4));
-        factory.setReadTimeout(Duration.ofSeconds(4));
+        factory.setConnectTimeout(Duration.ofSeconds(5));
+        factory.setReadTimeout(Duration.ofSeconds(10));
         return new RestTemplate(factory);
     }
 }

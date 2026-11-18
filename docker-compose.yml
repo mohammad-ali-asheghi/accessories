@@ -1,0 +1,40 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: accessories-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-accessories}
+      POSTGRES_USER: ${POSTGRES_USER:-accessories_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_this_strong_password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-accessories_user} -d ${POSTGRES_DB:-accessories}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    container_name: accessories-app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      PORT: 8080
+      DB_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-accessories}
+      DB_USERNAME: ${POSTGRES_USER:-accessories_user}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-change_this_strong_password}
+      UPLOAD_DIR: /app/uploads
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    volumes:
+      - uploads_data:/app/uploads
+
+volumes:
+  postgres_data:
+  uploads_data:

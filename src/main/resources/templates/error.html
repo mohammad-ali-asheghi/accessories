@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0b1120">
+    <title th:text="${errorTitle != null} ? ${errorTitle} : 'خطا'">خطا</title>
+    <link rel="icon" type="image/png" th:href="@{/icon.png}">
+    <link rel="stylesheet" th:href="@{/css/global.css}">
+    <style>
+        .error-page {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+        .error-card {
+            max-width: 460px;
+            width: 100%;
+            padding: 36px 28px;
+            text-align: center;
+            border-radius: var(--radius-xl);
+        }
+        .error-code {
+            font-size: 56px;
+            font-weight: 900;
+            color: var(--text-sky);
+            line-height: 1;
+            margin-bottom: 12px;
+        }
+        .error-title {
+            font-size: 22px;
+            font-weight: 800;
+            margin-bottom: 10px;
+        }
+        .error-desc {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-bottom: 24px;
+            line-height: 1.7;
+        }
+    </style>
+</head>
+<body>
+<div class="error-page">
+    <div class="error-card glass-card">
+        <div class="error-code" th:text="${statusCode != null} ? ${statusCode} : '404'">404</div>
+        <h1 class="error-title" th:text="${errorTitle != null} ? ${errorTitle} : 'صفحه مورد نظر یافت نشد'">خطا</h1>
+        <p class="error-desc" th:text="${errorMessage != null} ? ${errorMessage} : 'متأسفانه درخواست شما قابل انجام نبود.'">
+            متأسفانه خطایی رخ داده است.
+        </p>
+        <a href="/" class="btn btn-primary">بازگشت به صفحه اصلی</a>
+    </div>
+</div>
+</body>
+</html>
