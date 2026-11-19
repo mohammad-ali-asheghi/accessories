@@ -9,7 +9,7 @@
     <link rel="stylesheet" th:href="@{/css/global.css}">
     <link rel="stylesheet" th:href="@{/css/index.css}">
 </head>
-<body th:attr="data-is-admin=${isAdmin}">
+<body th:attr="data-is-admin=${isAdmin}, data-has-more=${hasMore}">
 
 <!-- Toast Notification Container -->
 <div id="toast-container" class="toast-container">
@@ -29,7 +29,7 @@
                 <img th:src="@{/icon.png}" alt="Logo" class="brand-logo" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'%2338bdf8\'><path d=\'M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z\'/></svg>'">
             </div>
             <div class="brand-info">
-                <span class="brand-name" th:text="${seller.name}">اکسسوری نودهی</span>
+                <span class="brand-name" th:text="${seller.name}">فروشگاه اکسسوری</span>
                 <span class="status-badge">
                     <span class="pulse-dot"></span>
                     فروشگاه آنلاین
@@ -202,12 +202,10 @@
             </div>
         </div>
 
-        <!-- Skeleton / Loading Indicator -->
+        <!-- Loading Indicator -->
         <div id="loader" class="loader-container" style="display: none;">
-            <div class="skeleton-grid">
-                <div class="skeleton-card shimmer" th:each="i : ${#numbers.sequence(1, 4)}"></div>
-            </div>
-            <div class="loader-text">در حال بارگذاری محصولات...</div>
+            <div class="loader-spinner"></div>
+            <div class="loader-text">در حال بارگذاری محصولات بیشتر...</div>
         </div>
     </section>
 </main>
@@ -382,7 +380,7 @@
             <div class="footer-col">
                 <div class="footer-brand">
                     <img th:src="@{/icon.png}" alt="Logo" class="footer-logo">
-                    <h4 th:text="${seller.name}">فروشگاه اکسسوری نودهی</h4>
+                    <h4 th:text="${seller.name}">فروشگاه اکسسوری</h4>
                 </div>
                 <p class="footer-about">عرضه زیباترین و خاص‌ترین اکسسوری‌ها، بدلیجات، سنگ‌های قیمتی و عتیقه‌جات با ضمانت کیفیت و ارسال سریع.</p>
             </div>

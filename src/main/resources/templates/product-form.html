@@ -63,11 +63,11 @@
 
             <!-- In Stock Switch -->
             <div class="form-group checkbox-group">
-                <label class="switch-container">
+                <label class="switch-container" for="inStock">
                     <input type="checkbox" id="inStock" name="inStock" value="true" th:checked="${product.inStock}">
-                    <input type="hidden" name="_inStock" value="on"/>
                     <span class="switch-slider"></span>
                     <span class="switch-label">این محصول در انبار موجود است و قابل سفارش می‌باشد</span>
+                    <input type="hidden" name="_inStock" value="on"/>
                 </label>
             </div>
 
@@ -293,6 +293,21 @@ function deleteExistingImage(productId, imageId) {
             }
         })
         .catch(() => showToast('خطای ارتباط با سرور', 'error'));
+}
+
+// Prevent double submission
+const productForm = document.getElementById('product-form');
+if (productForm) {
+    productForm.addEventListener('submit', (e) => {
+        const submitBtn = document.getElementById('submit-btn');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.style.opacity = '0.7';
+            submitBtn.style.cursor = 'not-allowed';
+            const spanText = submitBtn.querySelector('span');
+            if (spanText) spanText.textContent = 'در حال ذخیره اطلاعات...';
+        }
+    });
 }
 </script>
 </body>

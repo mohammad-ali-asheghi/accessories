@@ -57,6 +57,11 @@ public class ProductService {
         for (String url : imageUrls) {
             if (url == null || url.isBlank()) continue;
             String cleanUrl = url.trim();
+
+            boolean alreadyExists = product.getImages().stream()
+                    .anyMatch(img -> cleanUrl.equalsIgnoreCase(img.getImageUrl()));
+            if (alreadyExists) continue;
+
             boolean makePrimary = !hasPrimary;
             ProductImageEntity img = new ProductImageEntity(product, cleanUrl, nextOrder++, makePrimary);
             product.getImages().add(img);

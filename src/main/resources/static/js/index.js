@@ -8,11 +8,12 @@ const isAdmin = document.body.dataset.isAdmin === 'true';
 let currentPage = 0;
 const pageSize = 12;
 let loading = false;
-let hasMore = true;
+let hasMore = document.body.dataset.hasMore === 'true';
 let searchQuery = '';
 let selectedCategory = '';
 let debounceTimer = null;
 let pendingDeleteId = null;
+let scrollTicking = false;
 
 // Initialize on DOM load
 document.addEventListener('DOMContentLoaded', () => {
@@ -28,20 +29,26 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
         // No server-side cards, fetch page 0
         currentPage = 0;
+        hasMore = true;
         loadProducts();
     }
 
-    // Infinite scroll
+    // Infinite scroll with passive listener
     window.addEventListener('scroll', handleScroll, { passive: true });
 });
 
 function handleScroll() {
-    if (loading || !hasMore) return;
-    const scrollPosition = window.innerHeight + window.scrollY;
-    const threshold = document.documentElement.offsetHeight - 600;
-    if (scrollPosition >= threshold) {
-        loadProducts();
-    }
+    if (loading || !hasMore || scrollTicking) return;
+    scrollTicking = true;
+    requestAnimationFrame(() => {
+        scrollTicking = false;
+        if (loading || !hasMore) return;
+        const scrollPosition = window.innerHeight + window.scrollY;
+        const threshold = document.documentElement.offsetHeight - 400;
+        if (scrollPosition >= threshold) {
+            loadProducts();
+        }
+    });
 }
 
 function initSearch() {
@@ -148,7 +155,7 @@ function loadProducts() {
     loading = true;
 
     const loader = document.getElementById('loader');
-    if (loader) loader.style.display = 'block';
+    if (loader) loader.style.display = 'flex';
 
     const params = new URLSearchParams();
     params.set('page', currentPage);

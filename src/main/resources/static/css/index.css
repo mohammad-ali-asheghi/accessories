@@ -456,27 +456,36 @@
     margin-bottom: 20px;
 }
 
-/* Skeleton Loading */
+/* Smooth Loading Spinner */
 .loader-container {
-    margin-top: 24px;
+    margin: 32px auto;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 80px;
 }
 
-.skeleton-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 22px;
+.loader-spinner {
+    width: 36px;
+    height: 36px;
+    border: 3px solid rgba(56, 189, 248, 0.2);
+    border-top-color: var(--text-sky);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 10px;
 }
 
-.skeleton-card {
-    height: 380px;
-    border-radius: var(--radius-lg);
+@keyframes spin {
+    to { transform: rotate(360deg); }
 }
 
 .loader-text {
     text-align: center;
-    margin-top: 18px;
     color: var(--text-muted);
-    font-size: 14px;
+    font-size: 13px;
+    font-weight: 500;
 }
 
 /* Contact Modal Styles */

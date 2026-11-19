@@ -11,11 +11,11 @@ import org.springframework.context.annotation.Configuration;
 @ConfigurationProperties(prefix = "app.seller")
 public class SellerConfig {
 
-    private String name = "nodehi";
-    private String phone = "09120001234";
-    private String telegram = "mhmd928787";
-    private String instagram = "mhmd928787";
-    private String bale = "mhmd928787";
-    private String whatsapp = "09120001234";
-    private String address = "address";
+    private String name = "فروشگاه اکسسوری";
+    private String phone = "09123456789";
+    private String telegram = "accessory_store";
+    private String instagram = "accessory_store";
+    private String bale = "accessory_store";
+    private String whatsapp = "09123456789";
+    private String address = "تهران، بازار بزرگ، پاساژ اکسسوری";
 }

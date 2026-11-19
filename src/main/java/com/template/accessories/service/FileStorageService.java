@@ -12,6 +12,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.imageio.ImageIO;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
+import java.awt.image.BufferedImage;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -140,9 +144,7 @@ public class FileStorageService {
                 throw new ServiceException("مسیر فایل نامعتبر است.");
             }
 
-            try (InputStream in = file.getInputStream(); FileOutputStream out = new FileOutputStream(targetPath.toFile())) {
-                in.transferTo(out);
-            }
+            saveWithOptimization(file, targetPath);
 
             String localUrl = "/uploads/" + uniqueFileName;
             log.info("Saved image to local storage: {}", localUrl);
@@ -152,6 +154,74 @@ public class FileStorageService {
         } catch (Exception e) {
             log.error("Failed to save image locally", e);
             throw new ServiceException("خطا در ذخیره فایل تصویر روی سرور.");
+        }
+    }
+
+    private void saveWithOptimization(MultipartFile file, Path targetPath) {
+        String fileName = targetPath.getFileName().toString().toLowerCase(Locale.ROOT);
+        String format = "jpg";
+        if (fileName.endsWith(".png")) format = "png";
+        else if (fileName.endsWith(".webp")) format = "webp";
+        else if (fileName.endsWith(".gif")) format = "gif";
+
+        if ("gif".equals(format)) {
+            try (InputStream in = file.getInputStream(); FileOutputStream out = new FileOutputStream(targetPath.toFile())) {
+                in.transferTo(out);
+            } catch (Exception e) {
+                log.warn("Failed to write GIF, trying transferTo", e);
+            }
+            return;
+        }
+
+        try (InputStream in = file.getInputStream()) {
+            BufferedImage original = ImageIO.read(in);
+            if (original == null) {
+                try (InputStream rawIn = file.getInputStream(); FileOutputStream out = new FileOutputStream(targetPath.toFile())) {
+                    rawIn.transferTo(out);
+                }
+                return;
+            }
+
+            int origWidth = original.getWidth();
+            int origHeight = original.getHeight();
+            int maxDim = 1600;
+
+            if (origWidth <= maxDim && origHeight <= maxDim && file.getSize() < 1024 * 1024) {
+                try (InputStream rawIn = file.getInputStream(); FileOutputStream out = new FileOutputStream(targetPath.toFile())) {
+                    rawIn.transferTo(out);
+                }
+                return;
+            }
+
+            double scale = Math.min((double) maxDim / origWidth, (double) maxDim / origHeight);
+            int newWidth = Math.max(1, (int) Math.round(origWidth * Math.min(1.0, scale)));
+            int newHeight = Math.max(1, (int) Math.round(origHeight * Math.min(1.0, scale)));
+
+            int imageType = (format.equals("png") && original.getColorModel().hasAlpha())
+                    ? BufferedImage.TYPE_INT_ARGB
+                    : BufferedImage.TYPE_INT_RGB;
+
+            BufferedImage resized = new BufferedImage(newWidth, newHeight, imageType);
+            Graphics2D g2d = resized.createGraphics();
+            g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+            g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2d.drawImage(original, 0, 0, newWidth, newHeight, null);
+            g2d.dispose();
+
+            boolean written = ImageIO.write(resized, format, targetPath.toFile());
+            if (!written) {
+                try (InputStream rawIn = file.getInputStream(); FileOutputStream out = new FileOutputStream(targetPath.toFile())) {
+                    rawIn.transferTo(out);
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Failed to optimize image {}, saving original: {}", targetPath.getFileName(), e.getMessage());
+            try (InputStream rawIn = file.getInputStream(); FileOutputStream out = new FileOutputStream(targetPath.toFile())) {
+                rawIn.transferTo(out);
+            } catch (Exception ex) {
+                throw new ServiceException("خطا در ذخیره فایل تصویر.");
+            }
         }
     }
 
