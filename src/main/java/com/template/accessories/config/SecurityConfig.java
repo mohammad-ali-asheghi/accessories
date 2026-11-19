@@ -90,17 +90,28 @@ public class SecurityConfig {
                     String mobile = mobiles[i].trim();
                     if (mobile.isEmpty()) continue;
 
-                    Long chatId = (i < chats.length && !chats[i].trim().isEmpty())
-                            ? Long.parseLong(chats[i].trim())
-                            : 0L;
+                    Long chatId = 0L;
+                    if (i < chats.length && !chats[i].trim().isEmpty()) {
+                        try {
+                            chatId = Long.parseLong(chats[i].trim());
+                        } catch (NumberFormatException ignored) {}
+                    } else if (chats.length == 1 && !chats[0].trim().isEmpty()) {
+                        try {
+                            chatId = Long.parseLong(chats[0].trim());
+                        } catch (NumberFormatException ignored) {}
+                    }
 
+                    final Long resolvedChatId = chatId;
                     userRepository.findByUsername(mobile).ifPresentOrElse(
                             existing -> {
-                                log.info("Admin user {} already exists.", mobile);
-                                if (existing.getChatId() == 0L && chatId != 0L) {
-                                    existing.setChatId(chatId);
-                                    userRepository.save(existing);
+                                log.info("Admin user {} already exists. Refreshing credentials.", mobile);
+                                existing.setPassword(passwordEncoder.encode(adminPassword));
+                                if (resolvedChatId != 0L) {
+                                    existing.setChatId(resolvedChatId);
                                 }
+                                existing.setEnabled(true);
+                                existing.setRole(RoleEnum.ADMIN);
+                                userRepository.save(existing);
                             },
                             () -> {
                                 UserEntity admin = new UserEntity();
@@ -108,7 +119,7 @@ public class SecurityConfig {
                                 admin.setEnabled(true);
                                 admin.setRole(RoleEnum.ADMIN);
                                 admin.setPassword(passwordEncoder.encode(adminPassword));
-                                admin.setChatId(chatId);
+                                admin.setChatId(resolvedChatId);
                                 userRepository.save(admin);
                                 log.info("Created admin user: {}", mobile);
                             }

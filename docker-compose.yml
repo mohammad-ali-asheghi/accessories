@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   db:
     image: postgres:17-alpine
@@ -5,13 +7,15 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-accessories}
-      POSTGRES_USER: ${POSTGRES_USER:-accessories_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_this_strong_password}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "${DB_PORT:-5433}:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-accessories_user} -d ${POSTGRES_DB:-accessories}"]
-      interval: 10s
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-accessories}"]
+      interval: 5s
       timeout: 5s
       retries: 5
 
@@ -27,8 +31,8 @@ services:
     environment:
       PORT: 8080
       DB_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-accessories}
-      DB_USERNAME: ${POSTGRES_USER:-accessories_user}
-      DB_PASSWORD: ${POSTGRES_PASSWORD:-change_this_strong_password}
+      DB_USERNAME: ${POSTGRES_USER:-postgres}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       UPLOAD_DIR: /app/uploads
     ports:
       - "${APP_PORT:-8080}:8080"

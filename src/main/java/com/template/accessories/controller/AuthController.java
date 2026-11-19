@@ -59,10 +59,10 @@ public class AuthController {
                                     RedirectAttributes redirectAttributes) {
         String cleanMobile = username.trim();
         try {
-            UserEntity user = userService.loadUserByUsername(cleanMobile);
+            UserEntity user = userService.findByUsernameOrChatId(cleanMobile);
             if (passwordEncoder.matches(password, user.getPassword())) {
                 authenticateUser(user, request);
-                log.info("Admin {} logged in successfully with password.", cleanMobile);
+                log.info("Admin {} logged in successfully with password.", user.getUsername());
                 redirectAttributes.addFlashAttribute("successMessage", "ورود به پنل مدیریت با موفقیت انجام شد.");
                 return "redirect:/admin";
             }
@@ -93,7 +93,7 @@ public class AuthController {
         }
 
         try {
-            UserEntity user = userService.loadUserByUsername(cleanMobile);
+            UserEntity user = userService.findByUsernameOrChatId(cleanMobile);
             String code = otpCodeService.generateOtp(user.getUsername());
             otpCodeService.sendOtp(user.getChatId(), code);
 
@@ -101,12 +101,12 @@ public class AuthController {
             log.info("OTP sent to admin: {}", cleanMobile);
 
             model.addAttribute("mobile", cleanMobile);
-            model.addAttribute("message", "کد تایید با موفقیت به پیام‌رسان بله/تلگرام شما ارسال شد.");
+            model.addAttribute("message", "کد تایید با موفقیت به پیام‌رسان تلگرام/بله شما ارسال شد.");
             model.addAttribute("cooldown", COOLDOWN_SECONDS);
             return "verify-otp";
         } catch (Exception e) {
             log.error("Failed to send OTP to {}: {}", cleanMobile, e.getMessage());
-            redirectAttributes.addFlashAttribute("error", "کاربری با این شماره موبایل یافت نشد یا در ارسال کد خطایی رخ داد.");
+            redirectAttributes.addFlashAttribute("error", "کاربری با این شناسه یافت نشد یا در ارسال کد خطایی رخ داد: " + e.getMessage());
             return "redirect:/login";
         }
     }
@@ -123,7 +123,17 @@ public class AuthController {
         String cleanMobile = mobile.trim();
         String cleanCode = code.trim();
 
-        boolean valid = otpCodeService.validateOtp(cleanMobile, cleanCode);
+        UserEntity user;
+        try {
+            user = userService.findByUsernameOrChatId(cleanMobile);
+        } catch (Exception e) {
+            model.addAttribute("mobile", cleanMobile);
+            model.addAttribute("error", "کاربر مورد نظر یافت نشد.");
+            return "verify-otp";
+        }
+
+        boolean valid = otpCodeService.validateOtp(user.getUsername(), cleanCode)
+                || otpCodeService.validateOtp(cleanMobile, cleanCode);
         if (!valid) {
             model.addAttribute("mobile", cleanMobile);
             model.addAttribute("error", "کد تایید وارد شده نامعتبر یا منقضی شده است.");
@@ -131,10 +141,9 @@ public class AuthController {
         }
 
         try {
-            UserEntity user = userService.loadUserByUsername(cleanMobile);
             authenticateUser(user, request);
             OTP_COOLDOWN.remove(cleanMobile);
-            log.info("Admin {} logged in successfully with OTP.", cleanMobile);
+            log.info("Admin {} logged in successfully with OTP.", user.getUsername());
             redirectAttributes.addFlashAttribute("successMessage", "ورود به پنل مدیریت با موفقیت انجام شد.");
             return "redirect:/admin";
         } catch (Exception e) {

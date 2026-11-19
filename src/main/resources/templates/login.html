@@ -42,8 +42,8 @@
         <!-- Tab 1: Password Login Form -->
         <form th:action="@{/login}" method="post" id="form-password" class="auth-form-content">
             <div class="form-group">
-                <label for="username">شماره موبایل ادمین</label>
-                <input type="text" id="username" name="username" placeholder="09123456789" required autocomplete="username" dir="ltr">
+                <label for="username">شماره موبایل یا شناسه کاربری ادمین</label>
+                <input type="text" id="username" name="username" placeholder="09123456789 یا 123456789" required autocomplete="username" dir="ltr">
             </div>
 
             <div class="form-group">
@@ -63,12 +63,12 @@
         <!-- Tab 2: OTP Login Form -->
         <form th:action="@{/otp/send}" method="post" id="form-otp" class="auth-form-content" style="display: none;">
             <div class="form-group">
-                <label for="mobile">شماره موبایل ثبت‌شده در بله/تلگرام</label>
-                <input type="text" id="mobile" name="mobile" placeholder="09123456789" required autocomplete="tel" dir="ltr">
+                <label for="mobile">شماره موبایل یا شناسه چت تلگرام</label>
+                <input type="text" id="mobile" name="mobile" placeholder="09123456789 یا 123456789" required autocomplete="tel" dir="ltr">
             </div>
 
             <p class="otp-notice">
-                کد تایید ۶ رقمی به پیام‌رسان بله یا ربات تلگرام شماره شما ارسال خواهد شد.
+                کد تایید ۶ رقمی به ربات تلگرام یا پیام‌رسان بله ارسال خواهد شد.
             </p>
 
             <button type="submit" class="btn btn-accent submit-auth-btn">

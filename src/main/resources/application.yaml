@@ -35,6 +35,7 @@ server:
 telegram:
   bot:
     token: ${BOT_TOKEN:}
+    api-url: ${BOT_API_URL:https://api.telegram.org}
 
 supabase:
   url: ${SUPABASE_URL:}

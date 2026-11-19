@@ -25,6 +25,9 @@ public class OtpCodeService {
     @Value("${telegram.bot.token:}")
     private String botToken;
 
+    @Value("${telegram.bot.api-url:https://api.telegram.org}")
+    private String botApiUrl;
+
     private final OtpCodeRepository otpCodeRepository;
     private final RestTemplate restTemplate;
 
@@ -36,19 +39,34 @@ public class OtpCodeService {
             throw new ServiceException("شناسه چت برای این کاربر تنظیم نشده است.");
         }
 
-        String url = "https://tapi.bale.ai/bot" + botToken + "/sendMessage";
-
         Map<String, Object> request = new HashMap<>();
         request.put("chat_id", chatId);
-        request.put("text", "کد تایید ورود به پنل مدیریت: " + code);
+        request.put("text", "کد تایید ورود به پنل مدیریت فروشگاه: " + code);
+
+        String baseUrl = (botApiUrl != null && !botApiUrl.isBlank()) ? botApiUrl.replaceAll("/+$", "") : "https://api.telegram.org";
+        String primaryUrl = baseUrl + "/bot" + botToken + "/sendMessage";
 
         try {
-            restTemplate.postForEntity(url, request, String.class);
-            log.info("Sent OTP code to chat id: {}", chatId);
+            restTemplate.postForEntity(primaryUrl, request, String.class);
+            log.info("Sent OTP code via primary API ({}) to chat id: {}", baseUrl, chatId);
+            return;
         } catch (Exception e) {
-            log.error("Failed to send OTP code to chat id {}: {}", chatId, e.getMessage());
-            throw new ServiceException("خطا در ارسال کد تایید به پیام‌رسان.");
+            log.warn("Failed to send OTP code via primary API ({}): {}", primaryUrl, e.getMessage());
         }
+
+        // Fallback to Bale if primary was Telegram
+        if (baseUrl.contains("telegram.org")) {
+            try {
+                String fallbackUrl = "https://tapi.bale.ai/bot" + botToken + "/sendMessage";
+                restTemplate.postForEntity(fallbackUrl, request, String.class);
+                log.info("Sent OTP code via Bale fallback to chat id: {}", chatId);
+                return;
+            } catch (Exception e) {
+                log.error("Failed to send OTP code via Bale fallback to chat id {}: {}", chatId, e.getMessage());
+            }
+        }
+
+        throw new ServiceException("خطا در ارسال کد تایید به پیام‌رسان تلگرام/بله.");
     }
 
     public String generateOtp(String mobile) {
